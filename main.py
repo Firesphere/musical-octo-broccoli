@@ -125,9 +125,10 @@ def main(
 
     if new:
         for env in ['test', 'prod']:
+            app = app[0]
             prj = f"{app}-{env}"
             res = create_project(prj, org)
-            print(json.dumps(res.slug))
+            print(json.dumps(res["slug"]))
             if env == 'prod':
                 data = rule_payload(res.slug)
                 create_rule(app, data, org)
