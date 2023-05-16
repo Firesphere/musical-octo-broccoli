@@ -102,7 +102,7 @@ def create_project(app: str, org: str):
     path = f"/teams/{org}/{org}/projects/"
     data = {
         "default_rules": True,
-        "name": app[0],
+        "name": app,
         "platform": "php"
     }
     res = _request(path, 'post', json=data)
@@ -128,7 +128,11 @@ def main(
             app = app[0]
             prj = f"{app}-{env}"
             res = create_project(prj, org)
+            print("Project slug:")
             print(json.dumps(res["slug"]))
+            keys = _request(f"/projects/{org}/{prj}/keys/")
+            print("DSN:")
+            print(keys["dsn"]["public"])
             if env == 'prod':
                 data = rule_payload(res.slug)
                 create_rule(app, data, org)
