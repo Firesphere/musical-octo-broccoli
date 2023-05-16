@@ -1,0 +1,5 @@
+requests~=2.30.0
+py2app
+charset-normalizer
+chardet
+python-dotenv
