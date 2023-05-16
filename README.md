@@ -18,6 +18,12 @@ This little project creates/links a sentry project to a Teams team.
 
 `pip3 install -r requirements.txt`
 
+## Configuration
+
+Use a `.env` file, as per the example.env.
+
+
+
 ## Usage
 
 Note, to link an app, the full project name as returned from Sentry in `--list-apps` must be used.

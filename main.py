@@ -1,8 +1,11 @@
+#!/usr/bin/python3
+
 import argparse
 import json
 import requests
 import dotenv
 import os
+from string import Template
 
 env_path = os.path.join(os.getcwd(), '.env')
 dotenv.load_dotenv(dotenv_path=env_path)
@@ -71,25 +74,25 @@ def list_projects():
     return res
 
 
-def list_rules(app: str, org: str):
+def list_rules(app: str):
     path = f"/projects/{org}/{app}/rules/"
     res = _request(path, method="get", paginate=True)
     return res
 
 
-def fetch_rule(app: str, rule_id: int, org: str):
+def fetch_rule(app: str, rule_id: int):
     path = f"/projects/{org}/{app}/rules/{rule_id}/"
     res = _request(path, method="get")
     return res
 
 
-def create_rule(app: str, data: dict, org: str):
+def create_rule(app: str, data: dict):
     path = f"/projects/{org}/{app}/rules/"
     res = _request(path, json=data)
     return res
 
 
-def delete_rule(app: str, rule_id: int, org: str):
+def delete_rule(app: str, rule_id: int):
     path = f"/projects/{org}/{app}/rules/{rule_id}/"
     try:
         _request(path, method="delete", parse_json=False)
@@ -98,7 +101,7 @@ def delete_rule(app: str, rule_id: int, org: str):
     return True
 
 
-def create_project(app: str, org: str):
+def create_project(app: str):
     path = f"/teams/{org}/{org}/projects/"
     data = {
         "default_rules": True,
@@ -121,21 +124,32 @@ def main(
 
     if create_rules:
         data = rule_payload(app[0])
-        create_rule(app[0], data, org)
+        create_rule(app[0], data)
 
     if new:
+        dsns = {}
         for env in ['test', 'prod']:
             app = app[0]
             prj = f"{app}-{env}"
-            res = create_project(prj, org)
+            res = create_project(prj)
             print("Project slug:")
             print(json.dumps(res["slug"]))
             keys = _request(f"/projects/{org}/{prj}/keys/")
             print("DSN:")
             print(keys["dsn"]["public"])
             if env == 'prod':
+                dsns["LIVE_DSN"] = keys["dsn"]["public"]
                 data = rule_payload(res.slug)
-                create_rule(app, data, org)
+                create_rule(app, data)
+            else:
+                dsns["TEST_DSN"] = keys["dsn"]["public"]
+        file = open("./assets/sentry.tmpl", "r")
+        contents = Template(file.read())
+        file.close()
+        print("Sentry yml for Silverstripe:")
+        print("###")
+        print(contents.substitute(dsns))
+        print("###")
 
 
 def print_hi(name):
