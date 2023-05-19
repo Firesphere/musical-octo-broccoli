@@ -4,3 +4,4 @@ charset-normalizer
 chardet
 python-dotenv
 urllib3==1.26.6
+terminaltables

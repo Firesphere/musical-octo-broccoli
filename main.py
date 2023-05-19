@@ -6,6 +6,7 @@ import requests
 import dotenv
 import os
 from string import Template
+from terminaltables import AsciiTable
 
 env_path = os.path.join(os.getcwd(), '.env')
 dotenv.load_dotenv(dotenv_path=env_path)
@@ -118,17 +119,36 @@ def main(
         list_apps: bool,
         new: bool
 ):
+    # Get the app. It's passed in as a list, we need item one from the list
+    if app is not None:
+        app = app[0]
+
     if list_apps:
-        print(json.dumps([project["slug"] for project in list_projects()], indent=2))
+        table = [
+            ['Sentry label', 'Project', 'DSN\nCSP']
+        ]
+        for project in list_projects():
+            if app is None or app == project["slug"]:
+                keys = _request(f"/projects/{org}/{project['slug']}/keys/")
+                table.append([
+                    keys["label"],
+                    project["slug"],
+                    f"{keys['dsn']['public']}\n{keys['dsn']['csp']}"
+                ])
+        tbl = AsciiTable(table, "Sentry projects")
+        tbl.inner_heading_row_border = True
+        tbl.inner_row_border = True
+        print(tbl.table)
+
         return
 
     if create_rules:
-        data = rule_payload(app[0])
-        create_rule(app[0], data)
+        data = rule_payload(app)
+        create_rule(app, data)
 
     if new:
         dsns = {}
-        app = app[0]
+        app = app
         for env in ['test', 'prod']:
             prj = f"{app}-{env}"
             res = create_project(prj)
@@ -140,7 +160,7 @@ def main(
             if env == 'prod':
                 dsns["LIVE_DSN"] = keys["dsn"]["public"]
                 data = rule_payload(res["slug"])
-                create_rule(app, data)
+                create_rule(prj, data)
             else:
                 dsns["TEST_DSN"] = keys["dsn"]["public"]
         file = open("./assets/sentry.tmpl", "r")
@@ -162,9 +182,21 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description="Update sentry project with a set of standard rules"
     )
-    parser.add_argument("--app", nargs="*")
-    parser.add_argument("--list-apps", action="store_true")
-    parser.add_argument("--create", action="store_true")
-    parser.add_argument("--new", action="store_true")
+    parser.add_argument("--app", '-a', nargs=1, help="Name of the app to link or create")
+    parser.add_argument("--list-apps", '-la', action="store_true", help="List projects in Sentry")
+    parser.add_argument("--teamlink", "-tl", action="store_true",
+                        help="Link the app. Requires the full slug, with `-prod` or `-test`")
+    parser.add_argument("--new", "-n", action="store_true",
+                        help="Creates a production and test project, and links the production to Teams."
+                             " Should not have `-prod` or `-test` in the app name")
     args = parser.parse_args()
-    main(args.app, args.create, args.list_apps, args.new)
+    if args.app is None:
+        if args.teamlink:
+            parser.error("Please tell me the full slug of the app to link (use -la, --list-apps)")
+        if args.new:
+            parser.error("I don't know what you expected, but without an app name, I can't create a project.")
+    elif not args.teamlink and not args.new and not args.list_apps:
+        parser.error(
+            "I'm unsure what to do with this app...\ncreate it? (use -n, --new)\n"
+            "link it? (use -tl, --teamlink)\nget its DSN and CSP? (use -la, --list-apps)")
+    main(args.app, args.teamlink, args.list_apps, args.new)
