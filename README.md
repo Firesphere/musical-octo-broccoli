@@ -8,7 +8,7 @@ This little project creates/links a sentry project to a Teams team.
 
 `pip3 install -r requirements.txt`
 
-### Or, better yet, use a venv
+### Or, use a venv
 
 `git clone git@github.com:Firesphere/musical-octo-broccoli.git`
 
@@ -18,11 +18,11 @@ This little project creates/links a sentry project to a Teams team.
 
 `pip3 install -r requirements.txt`
 
+(Note, within venv, you can't use `./main.py`, you have to use `python3 main.py`)
+
 ## Configuration
 
 Use a `.env` file, as per the example.env.
-
-
 
 ## Usage
 
