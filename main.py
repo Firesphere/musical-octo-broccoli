@@ -11,16 +11,18 @@ from terminaltables import AsciiTable
 env_path = os.path.join(os.getcwd(), '.env')
 dotenv.load_dotenv(dotenv_path=env_path)
 
-AUTH_TOKEN = os.getenv('AUTH_TOKEN')
-org = os.getenv('ORG')
-owner = os.getenv('OWNER')
-action_team = os.getenv('ACTION_TEAM')
-action_id = os.getenv('ACTION_ID')
-action_channel = os.getenv('ACTION_CHANNEL')
-action_channel_id = os.getenv('ACTION_CHANNEL_ID')
+AUTH_TOKEN = os.getenv('AUTH_TOKEN', '')
+org = os.getenv('ORG', '')
+owner = os.getenv('OWNER', '')
+action_team = os.getenv('ACTION_TEAM', False)
+action_channel = os.getenv('ACTION_CHANNEL', '')
+action_channel_id = os.getenv('ACTION_CHANNEL_ID', '')
+
+action_slack_id = os.getenv('ACTION_SLACK_ID', False)
 
 
-def rule_payload(app: str):
+# Todo, support Slack
+def slack_payload(app: str):
     return {
         "conditions": [
             {
@@ -38,11 +40,48 @@ def rule_payload(app: str):
         "filters": [],
         "actions": [
             {
+                "tags": "environment,url",
+                "workspace": action_slack_id,
+                "id": "sentry.integrations.slack.notify_action.SlackNotifyServiceAction",
+                "channel": action_channel,
+                "name": "Send a notification to Slack"
+            }
+        ],
+        "actionMatch": "all",
+        "filterMatch": "all",
+        "frequency": 1440,
+        "name": "Sentry alert",
+        "owner": owner,
+        "projects": [
+            app
+        ]
+    }
+
+
+def teams_payload(app: str):
+    return {
+        "conditions": [
+            {
+                "interval": "5m",
+                "id": "sentry.rules.conditions.event_frequency.EventFrequencyCondition",
+                "value": 10,
+                "comparisonType": "count",
+                "name": "The issue is seen more than 10 times in 5m"
+            },
+            {
+                "id": "sentry.rules.conditions.regression_event.RegressionEventCondition",
+                "name": "The issue changes state from resolved to unresolved"
+            }
+        ],
+        "filters": [],
+        "actions": [
+            {
+                "tags": "environment,url",
                 "team": action_team,
-                "id": action_id,
+                "id": "sentry.integrations.msteams.notify_action.MsTeamsNotifyServiceAction",
                 "channel": action_channel,
                 "channel_id": action_channel_id,
-                "name": "Send a notification to the Sentry Team to General"
+                "name": "Send a notification to the Sentry Team"
             }
         ],
         "actionMatch": "all",
@@ -56,9 +95,17 @@ def rule_payload(app: str):
     }
 
 
+def rule_payload(app: str):
+    if action_team is not False:
+        return teams_payload(app)
+    if action_slack_id is not False:
+        return slack_payload(app)
+    return {}
+
+
 def _request(path, method="post", paginate=False, parse_json=True, **kwargs):
     # A token with scopes project:read,project:write fetched from
-    headers = {"Authorization": f"Bearer {AUTH_TOKEN}", "Content-Type": f"application/json"}
+    headers = {"Authorization": f"Bearer {AUTH_TOKEN}", "Content-Type": "application/json"}
 
     url = f"https://sentry.io/api/0{path}"
     res = requests.request(method, url, headers=headers, **kwargs)
@@ -75,31 +122,14 @@ def list_projects():
     return res
 
 
-def list_rules(app: str):
-    path = f"/projects/{org}/{app}/rules/"
-    res = _request(path, method="get", paginate=True)
-    return res
-
-
-def fetch_rule(app: str, rule_id: int):
-    path = f"/projects/{org}/{app}/rules/{rule_id}/"
-    res = _request(path, method="get")
-    return res
-
-
 def create_rule(app: str, data: dict):
+    # If there's no Teams or Slack id, skip setting up rules
+    if not action_team and not action_slack_id:
+        print("No Slack or Teams connection set up, skipping creating rules")
+        return {}
     path = f"/projects/{org}/{app}/rules/"
     res = _request(path, json=data)
     return res
-
-
-def delete_rule(app: str, rule_id: int):
-    path = f"/projects/{org}/{app}/rules/{rule_id}/"
-    try:
-        _request(path, method="delete", parse_json=False)
-    except requests.exceptions.HTTPError:
-        return False
-    return True
 
 
 def create_project(app: str):
