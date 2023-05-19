@@ -128,8 +128,8 @@ def main(
 
     if new:
         dsns = {}
+        app = app[0]
         for env in ['test', 'prod']:
-            app = app[0]
             prj = f"{app}-{env}"
             res = create_project(prj)
             print("Project slug:")
@@ -139,7 +139,7 @@ def main(
             print(keys["dsn"]["public"])
             if env == 'prod':
                 dsns["LIVE_DSN"] = keys["dsn"]["public"]
-                data = rule_payload(res.slug)
+                data = rule_payload(res["slug"])
                 create_rule(app, data)
             else:
                 dsns["TEST_DSN"] = keys["dsn"]["public"]
