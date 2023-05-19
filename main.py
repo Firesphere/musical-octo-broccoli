@@ -7,6 +7,8 @@ import dotenv
 import os
 from string import Template
 from terminaltables import AsciiTable
+from App.Teams import Teams
+from App.Slack import Slack
 
 env_path = os.path.join(os.getcwd(), '.env')
 dotenv.load_dotenv(dotenv_path=env_path)
@@ -21,85 +23,11 @@ action_channel_id = os.getenv('ACTION_CHANNEL_ID', '')
 action_slack_id = os.getenv('ACTION_SLACK_ID', False)
 
 
-# Todo, support Slack
-def slack_payload(app: str):
-    return {
-        "conditions": [
-            {
-                "interval": "5m",
-                "id": "sentry.rules.conditions.event_frequency.EventFrequencyCondition",
-                "value": 10,
-                "comparisonType": "count",
-                "name": "The issue is seen more than 10 times in 5m"
-            },
-            {
-                "id": "sentry.rules.conditions.regression_event.RegressionEventCondition",
-                "name": "The issue changes state from resolved to unresolved"
-            }
-        ],
-        "filters": [],
-        "actions": [
-            {
-                "tags": "environment,url",
-                "workspace": action_slack_id,
-                "id": "sentry.integrations.slack.notify_action.SlackNotifyServiceAction",
-                "channel": action_channel,
-                "name": "Send a notification to Slack"
-            }
-        ],
-        "actionMatch": "all",
-        "filterMatch": "all",
-        "frequency": 1440,
-        "name": "Sentry alert",
-        "owner": owner,
-        "projects": [
-            app
-        ]
-    }
-
-
-def teams_payload(app: str):
-    return {
-        "conditions": [
-            {
-                "interval": "5m",
-                "id": "sentry.rules.conditions.event_frequency.EventFrequencyCondition",
-                "value": 10,
-                "comparisonType": "count",
-                "name": "The issue is seen more than 10 times in 5m"
-            },
-            {
-                "id": "sentry.rules.conditions.regression_event.RegressionEventCondition",
-                "name": "The issue changes state from resolved to unresolved"
-            }
-        ],
-        "filters": [],
-        "actions": [
-            {
-                "tags": "environment,url",
-                "team": action_team,
-                "id": "sentry.integrations.msteams.notify_action.MsTeamsNotifyServiceAction",
-                "channel": action_channel,
-                "channel_id": action_channel_id,
-                "name": "Send a notification to the Sentry Team"
-            }
-        ],
-        "actionMatch": "all",
-        "filterMatch": "all",
-        "frequency": 1440,
-        "name": "Sentry alert",
-        "owner": owner,
-        "projects": [
-            app
-        ],
-    }
-
-
 def rule_payload(app: str):
     if action_team is not False:
-        return teams_payload(app)
+        return Teams().payload(app)
     if action_slack_id is not False:
-        return slack_payload(app)
+        return Slack().payload(app)
     return {}
 
 
