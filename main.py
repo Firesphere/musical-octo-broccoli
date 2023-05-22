@@ -17,9 +17,6 @@ AUTH_TOKEN = os.getenv('AUTH_TOKEN', '')
 org = os.getenv('ORG', '')
 owner = os.getenv('OWNER', '')
 action_team = os.getenv('ACTION_TEAM', False)
-action_channel = os.getenv('ACTION_CHANNEL', '')
-action_channel_id = os.getenv('ACTION_CHANNEL_ID', '')
-
 action_slack_id = os.getenv('ACTION_SLACK_ID', False)
 
 
@@ -157,4 +154,6 @@ if __name__ == '__main__':
         parser.error(
             "I'm unsure what to do with this app...\ncreate it? (use -n, --new)\n"
             "link it? (use -tl, --teamlink)\nget its DSN and CSP? (use -la, --list-apps)")
+    if not args.teamlink and not args.new and not args.list_apps and args.app is None:
+        parser.error("You might need some --help (-h)")
     main(args.app, args.teamlink, args.list_apps, args.new)

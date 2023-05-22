@@ -1,13 +1,13 @@
 import os
+import dotenv
 
-AUTH_TOKEN = os.getenv('AUTH_TOKEN', '')
-org = os.getenv('ORG', '')
+env_path = os.path.join(os.getcwd(), '.env')
+dotenv.load_dotenv(dotenv_path=env_path)
+
 owner = os.getenv('OWNER', '')
-action_team = os.getenv('ACTION_TEAM', False)
 action_channel = os.getenv('ACTION_CHANNEL', '')
-action_channel_id = os.getenv('ACTION_CHANNEL_ID', '')
-
 action_slack_id = os.getenv('ACTION_SLACK_ID', False)
+
 
 class Slack:
 
@@ -46,5 +46,3 @@ class Slack:
                 app
             ]
         }
-
-
