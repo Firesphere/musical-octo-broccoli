@@ -19,13 +19,42 @@ owner = os.getenv('OWNER', '')
 action_team = os.getenv('ACTION_TEAM', False)
 action_slack_id = os.getenv('ACTION_SLACK_ID', False)
 
+# Update or edit conditions & filters as you wish.
+default_conditions = [
+    {
+        "id": "sentry.rules.conditions.first_seen_event.FirstSeenEventCondition"
+    },
+    {
+        "id": "sentry.rules.conditions.regression_event.RegressionEventCondition"
+    }
+]
+default_filters = [
+    {
+        "comparison_type": "newer",
+        "time": "minute",
+        "id": "sentry.rules.filters.age_comparison.AgeComparisonFilter",
+        "value": "60"
+    }
+]
+
 
 def rule_payload(app: str):
+    action = []
     if action_team is not False:
-        return Teams().payload(app)
+        action = Teams().payload()
     if action_slack_id is not False:
-        return Slack().payload(app)
-    return {}
+        action = Slack().payload()
+    return {
+        "conditions": default_conditions,
+        "filters": default_filters,
+        "actions": action,
+        "actionMatch": "all",
+        "filterMatch": "all",
+        "frequency": 1440,
+        "name": "Sentry alert",
+        "owner": owner,
+        "projects": [app],
+    }
 
 
 def _request(path, method="post", paginate=False, parse_json=True, **kwargs):
@@ -43,6 +72,11 @@ def _request(path, method="post", paginate=False, parse_json=True, **kwargs):
 
 def list_projects():
     path = "/projects/"
+    res = _request(path, method="get", paginate=True)
+    return res
+
+def list_rules(app: str):
+    path = f"/projects/{org}/{app}/rules/"
     res = _request(path, method="get", paginate=True)
     return res
 
@@ -83,7 +117,7 @@ def main(
             ['Sentry label', 'Project', 'DSN\nCSP']
         ]
         for project in list_projects():
-            if app is None or app == project["slug"]:
+            if (app is None) or (app == project["slug"]) or (project["slug"].find(app) >= 0):
                 keys = _request(f"/projects/{org}/{project['slug']}/keys/")
                 table.append([
                     keys["label"],
@@ -101,23 +135,10 @@ def main(
         data = rule_payload(app)
         create_rule(app, data)
 
+        return
+
     if new:
-        dsns = {}
-        app = app
-        for env in ['test', 'prod']:
-            prj = f"{app}-{env}"
-            res = create_project(prj)
-            print("Project slug:")
-            print(json.dumps(res["slug"]))
-            keys = _request(f"/projects/{org}/{prj}/keys/")
-            print("DSN:")
-            print(keys["dsn"]["public"])
-            if env == 'prod':
-                dsns["LIVE_DSN"] = keys["dsn"]["public"]
-                data = rule_payload(res["slug"])
-                create_rule(prj, data)
-            else:
-                dsns["TEST_DSN"] = keys["dsn"]["public"]
+        dsns = create_for_env(app)
         file = open("./assets/sentry.tmpl", "r")
         contents = Template(file.read())
         file.close()
@@ -125,6 +146,27 @@ def main(
         print("###")
         print(contents.substitute(dsns))
         print("###")
+
+        return
+
+
+def create_for_env(app):
+    dsns = {}
+    for env in ['test', 'prod']:
+        prj = f"{app}-{env}"
+        res = create_project(prj)
+        print("Project slug:")
+        print(json.dumps(res["slug"]))
+        keys = _request(f"/projects/{org}/{prj}/keys/")
+        print("DSN:")
+        print(keys["dsn"]["public"])
+        if env == 'prod':
+            dsns["LIVE_DSN"] = keys["dsn"]["public"]
+            data = rule_payload(res["slug"])
+            create_rule(prj, data)
+        else:
+            dsns["TEST_DSN"] = keys["dsn"]["public"]
+    return dsns
 
 
 def print_hi(name):
