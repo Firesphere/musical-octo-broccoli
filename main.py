@@ -117,7 +117,7 @@ def main(
             ['Sentry label', 'Project', 'DSN\nCSP']
         ]
         for project in list_projects():
-            if (app is None) or (app == project["slug"]) or (project["slug"].find(app) >= 0):
+            if (app is None) or (project["slug"].find(app) >= 0):
                 keys = _request(f"/projects/{org}/{project['slug']}/keys/")
                 table.append([
                     keys["label"],
