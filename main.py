@@ -106,8 +106,11 @@ def main(
         app,
         create_rules: bool,
         list_apps: bool,
-        new: bool
+        new: bool,
+        as_yml: bool,
 ):
+    list_dsns = {}
+
     # Get the app. It's passed in as a list, we need item one from the list
     if app is not None:
         app = app[0]
@@ -119,6 +122,7 @@ def main(
         for project in list_projects():
             if (app is None) or (project["slug"].find(app) >= 0):
                 keys = _request(f"/projects/{org}/{project['slug']}/keys/")
+                list_dsns = populate_list_dsn(as_yml, keys, list_dsns, project)
                 table.append([
                     keys["label"],
                     project["slug"],
@@ -128,27 +132,45 @@ def main(
         tbl.inner_heading_row_border = True
         tbl.inner_row_border = True
         print(tbl.table)
-
-        return
+        print(list_dsns)
 
     if create_rules:
         data = rule_payload(app)
         create_rule(app, data)
 
-        return
-
     if new:
         dsns = create_for_env(app)
+        as_yml = True
+        list_dsns = {'app': dsns}
+
+    if as_yml:
         file = open("./assets/sentry.tmpl", "r")
         contents = Template(file.read())
         file.close()
-        print("Sentry yml for Silverstripe:")
-        print("###")
-        print(contents.substitute(dsns))
-        print("###")
+        for dsn in list_dsns:
+            print(dsn)
+            print("Sentry yml for Silverstripe:")
+            print("###")
+            print(contents.substitute(list_dsns[dsn]))
+            print("###")
+    return
 
-        return
 
+def populate_list_dsn(as_yml, keys, list_dsns, project):
+    dsn_key = project['slug'].split('-')
+    dsn_key = dsn_key[0]
+    if dsn_key not in list_dsns:
+        list_dsns[dsn_key] = {
+            'TEST_DSN': None,
+            'LIVE_DSN': None
+        }
+    if as_yml:
+        if project["slug"].find('-test') >= 0:
+            list_dsns[dsn_key]["TEST_DSN"] = keys["dsn"]["public"]
+        else:
+            list_dsns[dsn_key]["LIVE_DSN"] = keys["dsn"]["public"]
+
+    return list_dsns
 
 def create_for_env(app):
     dsns = {}
@@ -186,6 +208,8 @@ if __name__ == '__main__':
     parser.add_argument("--new", "-n", action="store_true",
                         help="Creates a production and test project, and links the production to Teams."
                              " Should not have `-prod` or `-test` in the app name")
+    parser.add_argument("--as-yml", "-yml", action="store_true",
+                        help="Output a Silverstripe based YML to copy in to the project.")
     args = parser.parse_args()
     if args.app is None:
         if args.teamlink:
@@ -198,4 +222,4 @@ if __name__ == '__main__':
             "link it? (use -tl, --teamlink)\nget its DSN and CSP? (use -la, --list-apps)")
     if not args.teamlink and not args.new and not args.list_apps and args.app is None:
         parser.error("You might need some --help (-h)")
-    main(args.app, args.teamlink, args.list_apps, args.new)
+    main(args.app, args.teamlink, args.list_apps, args.new, args.as_yml)
