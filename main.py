@@ -75,6 +75,7 @@ def list_projects():
     res = _request(path, method="get", paginate=True)
     return res
 
+
 def list_rules(app: str):
     path = f"/projects/{org}/{app}/rules/"
     res = _request(path, method="get", paginate=True)
@@ -98,7 +99,7 @@ def create_project(app: str):
         "name": app,
         "platform": "php"
     }
-    res = _request(path, 'post', json=data)
+    res = _request(path, method='post', json=data)
     return res
 
 
