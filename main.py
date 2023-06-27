@@ -121,7 +121,7 @@ def main(
         ]
         for project in list_projects():
             if (app is None) or (project["slug"].find(app) >= 0):
-                keys = _request(f"/projects/{org}/{project['slug']}/keys/")
+                keys = _request(f"/projects/{org}/{project['slug']}/keys/", method="get")
                 list_dsns = populate_list_dsn(as_yml, keys, list_dsns, project)
                 table.append([
                     keys["label"],
@@ -132,7 +132,6 @@ def main(
         tbl.inner_heading_row_border = True
         tbl.inner_row_border = True
         print(tbl.table)
-        print(list_dsns)
 
     if create_rules:
         data = rule_payload(app)
@@ -171,6 +170,7 @@ def populate_list_dsn(as_yml, keys, list_dsns, project):
             list_dsns[dsn_key]["LIVE_DSN"] = keys["dsn"]["public"]
 
     return list_dsns
+
 
 def create_for_env(app):
     dsns = {}
