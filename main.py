@@ -125,9 +125,9 @@ def main(
                 keys = _request(f"/projects/{org}/{project['slug']}/keys/", method="get")
                 list_dsns = populate_list_dsn(as_yml, keys, list_dsns, project)
                 table.append([
-                    keys["label"],
+                    keys[0]["label"],
                     project["slug"],
-                    f"{keys['dsn']['public']}\n{keys['dsn']['csp']}"
+                    f"{keys[0]['dsn']['public']}\n{keys[0]['dsn']['csp']}"
                 ])
         tbl = AsciiTable(table, "Sentry projects")
         tbl.inner_heading_row_border = True
