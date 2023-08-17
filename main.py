@@ -166,9 +166,9 @@ def populate_list_dsn(as_yml, keys, list_dsns, project):
         }
     if as_yml:
         if project["slug"].find('-test') >= 0:
-            list_dsns[dsn_key]["TEST_DSN"] = keys["dsn"]["public"]
+            list_dsns[dsn_key]["TEST_DSN"] = keys[0]["dsn"]["public"]
         else:
-            list_dsns[dsn_key]["LIVE_DSN"] = keys["dsn"]["public"]
+            list_dsns[dsn_key]["LIVE_DSN"] = keys[0]["dsn"]["public"]
 
     return list_dsns
 
