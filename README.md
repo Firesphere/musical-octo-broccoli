@@ -35,17 +35,45 @@ usage: main.py [-h] [--app APP] [--list-apps] [--teamlink] [--new]
 Update sentry project with a set of standard rules
 
 optional arguments:
-  -h, --help         show this help message and exit
-  --app APP, -a APP  Name of the app to link or create
-  --list-apps, -la   list apps, or a single app if you pass in the app full slug
-  --teamlink, -tl    Link the app. Requires the full slug
-  --new, -n          Creates a new app and links the prod. Should not have `-prod` in the app name
+ *  -h, --help         show this help message and exit
+ *  --app APP, -a APP  Name of the app to link or create
+ *  --list-apps, -la   list apps, or a single app if you pass in the app full slug
+ *  --teamlink, -tl    Link the app. Requires the full slug
+ *  --new, -n          Creates a new app and links the prod. Should not have `-prod` in the app name
+
 ### Create a new project
+
 `python3 main.py --new --app=myprojectname`
 
+Or, shortened:
+
+`python3 main.py -n -a myporjectname`
+
 ### List projects from Sentry
+
 `python3 main.py --list-apps`
 
+Or, shortened:
+
+`python3 main.py -la`
+
+#### Find a specific project
+
+`python3 main.py --list-apps --app=myprojectname`
+
+Or, shortened:
+
+`python3 main.py -la -a myprojectname`
+
+##### And get its related YML
+
+`python3 main.py -la -a myprojectname -yml`
+
 ### Link existing project to Teams
+
 `python3 main.py --teamlink --app=myprojectname-prod`
+
+Or, shortened
+
+`python3 main.py -tl -a myprojectname-prod`
 
